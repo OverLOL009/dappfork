@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wave Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.0.umd.min.js"></script>
+  </head>
+
+  <body>
+    <h1>Wave Game</h1>
+    <div>
+      <h2>Current Wave Count: <span id="wave-count"></span></h2>
+      <h2>Your Address: <span id="your-address"></span></h2>
+      <form>
+        <button type="button" onclick="wave()">Wave at Me</button>
+      </form>
+    </div>
+
+    <script>
+      async function getCurrentWaveCount() {
+        const provider = new ethers.providers.JsonRpcProvider("https://rinkeby.infura.io/v3/YOUR_API_KEY");
+        const contractAddress = "YOUR_CONTRACT_ADDRESS";
+        const contractABI = [
+          "function totalWaves() view returns (uint256)",
+          "function wave() public",
+          "event NewWave(address indexed from, uint256 timestamp, string message)",
+        ];
+        const contract = new ethers.Contract(contractAddress, contractABI, provider);
+        const waveCount = await contract.totalWaves();
+        return waveCount.toNumber();
+      }
+
+      async function wave() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contractAddress = "YOUR_CONTRACT_ADDRESS";
+        const contractABI = [
+          "function totalWaves() view returns (uint256)",
+          "function wave() public",
+          "event NewWave(address indexed from, uint256 timestamp, string message)",
+        ];
+        const contract = new ethers.Contract(contractAddress, contractABI, signer);
+        const waveTxn = await contract.wave();
+        console.log("Mining...", waveTxn.hash);
+        await waveTxn.wait();
+        console.log("Mined --", waveTxn.hash);
+        updateUI();
+      }
+
+      async function updateUI() {
+        const waveCount = await getCurrentWaveCount();
+        const address = await getCurrentAddress();
+        document.getElementById("wave-count").innerText = waveCount.toString();
+        document.getElementById("your-address").innerText = address;
+      }
+
+      async function getCurrentAddress() {
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const address = await signer.getAddress();
+        return address;
+      }
+
+      updateUI();
+
+      window.ethereum.on("accountsChanged", updateUI);
+    </script>
+  </body>
+</html>
